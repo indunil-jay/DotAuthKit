@@ -1,20 +1,22 @@
 using Application.Abstractions.Messaging;
-using Application.Databases;
+using Domain.Abstractions;
 using Domain.Users;
 using SharedKernel;
 
 namespace Application.Features.Users.Commands.Register;
 
-internal sealed class RegisterCommandHandler(IApplicationDbContext dbContext)
+internal sealed class RegisterCommandHandler(
+    IUserRepository userRepository,
+    IUnitOfWork unitOfWork)
     : ICommandHandler<RegisterCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(RegisterCommand command, CancellationToken cancellationToken)
     {
         var user = User.CreateNew(command.Name, command.Email, command.Password);
 
-        dbContext.Users.Add(user);
+        userRepository.Add(user);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success(user.Id);
     }

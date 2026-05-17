@@ -1,18 +1,15 @@
 using Application.Abstractions.Messaging;
-using Application.Databases;
 using Domain.Users;
-using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 
 namespace Application.Features.Users.Commands.Login;
 
-internal sealed class LogginCommandHandler(IApplicationDbContext dbContext)
+internal sealed class LogginCommandHandler(IUserRepository userRepository)
     : ICommandHandler<LogginCommand, string>
 {
     public async Task<Result<string>> Handle(LogginCommand command, CancellationToken cancellationToken)
     {
-        User? user = await dbContext.Users
-            .FirstOrDefaultAsync(u => u.Email == command.Email, cancellationToken);
+        User? user = await userRepository.GetByEmailAsync(command.Email, cancellationToken);
 
         if (user is null || user.Password != command.Password)
         {
