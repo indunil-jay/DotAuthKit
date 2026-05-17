@@ -1,4 +1,5 @@
 ﻿using Application.Databases;
+using Domain.Users;
 using Infrastructure.DomainEvents;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -11,7 +12,7 @@ public sealed class ApplicationDbContext(
     : DbContext(options), IApplicationDbContext
 {
 
-
+    public DbSet<User> Users { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
