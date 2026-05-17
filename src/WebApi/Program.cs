@@ -1,4 +1,7 @@
 
+using Application;
+using Infrastructure;
+
 namespace WebApi;
 
 public static class Program
@@ -7,11 +10,10 @@ public static class Program
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-        // Add services to the container.
-
-        builder.Services.AddControllers();
-        // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-        builder.Services.AddOpenApi();
+        builder.Services
+            .AddPresentation()
+            .AddApplication()
+            .AddInfrastructure(builder.Configuration);
 
         WebApplication app = builder.Build();
 

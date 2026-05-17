@@ -16,9 +16,7 @@ public static class DependencyInjection
             .AddValidationBehaviors()
             .AddDomainEventHandlers();
 
-
-
-
+        services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, includeInternalTypes: true);
         return services;
     }
 
