@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: dotauthkit-postgres
+    environment:
+      - POSTGRES_DB=dotauthkit_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dotauthkit_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  webapi:
+    image: ${DOCKER_REGISTRY-}webapi
+    build:
+      context: .
+      dockerfile: src/WebApi/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db-viewer:
+    image: adminer:latest
+    container_name: dotauthkit-adminer
+    restart: always
+    ports:
+      - "8085:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+
+

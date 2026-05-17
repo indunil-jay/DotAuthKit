@@ -27,6 +27,7 @@ public static class Program
 
         app.UseAuthorization();
 
+        app.MapHealthChecks("/health");
 
         app.MapControllers();
 

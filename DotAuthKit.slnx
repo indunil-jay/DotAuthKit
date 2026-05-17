@@ -11,4 +11,7 @@
     <Project Path="src/SharedKernel/SharedKernel.csproj" Id="d4555b39-49fb-4826-8e6c-a3fbee29bbe9" />
     <Project Path="src/WebApi/WebApi.csproj" />
   </Folder>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
 </Solution>
