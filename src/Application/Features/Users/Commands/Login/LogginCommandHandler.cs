@@ -1,10 +1,14 @@
+using Application.Abstractions;
 using Application.Abstractions.Messaging;
 using Domain.Users;
 using SharedKernel;
 
 namespace Application.Features.Users.Commands.Login;
 
-internal sealed class LogginCommandHandler(IUserRepository userRepository)
+internal sealed class LogginCommandHandler(
+    IUserRepository userRepository,
+    IJwtProvider jwtProvider
+    )
     : ICommandHandler<LogginCommand, string>
 {
     public async Task<Result<string>> Handle(LogginCommand command, CancellationToken cancellationToken)
@@ -16,6 +20,8 @@ internal sealed class LogginCommandHandler(IUserRepository userRepository)
             return Result.Failure<string>(Error.Problem("Auth.InvalidCredentials", "Invalid email or password."));
         }
 
-        return Result.Success($"mock-jwt-token-for-{user.Id}");
+        string token = jwtProvider.GenerateToken(user);
+
+        return Result.Success(token);
     }
 }

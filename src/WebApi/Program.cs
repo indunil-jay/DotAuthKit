@@ -1,6 +1,8 @@
 
 using Application;
 using Infrastructure;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using WebApi.OptionSetup;
 
 namespace WebApi;
 
@@ -15,9 +17,14 @@ public static class Program
             .AddApplication()
             .AddInfrastructure(builder.Configuration);
 
+
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer();
+        builder.Services.ConfigureOptions<JwtOptionsSetup>();
+        builder.Services.ConfigureOptions<JwtBearerOptionSetup>();
+
         WebApplication app = builder.Build();
 
-        // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
@@ -25,6 +32,7 @@ public static class Program
 
         app.UseHttpsRedirection();
 
+        app.UseAuthentication ();
         app.UseAuthorization();
 
         app.MapHealthChecks("/health");

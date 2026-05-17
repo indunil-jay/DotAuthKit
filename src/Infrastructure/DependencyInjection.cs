@@ -1,4 +1,6 @@
+using Application.Abstractions;
 using Application.Databases;
+using Infrastructure.Authentication;
 using Infrastructure.DomainEvents;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +30,7 @@ public static class DependencyInjection
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IJwtProvider, JwtProvider>();
 
         return services;
     }
