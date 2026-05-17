@@ -1,24 +1,15 @@
 using Domain.Users;
-using Microsoft.EntityFrameworkCore;
+using Infrastructure.Persistence.Specifications.Users;
 
 namespace Infrastructure.Persistence.Repositories;
 
-internal sealed class UserRepository(ApplicationDbContext dbContext) : IUserRepository
+internal sealed class UserRepository(ApplicationDbContext dbContext)
+    : Repository<User>(dbContext), IUserRepository
 {
-    public async Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        return await dbContext.Users
-            .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
-    }
-
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
-        return await dbContext.Users
-            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
-    }
-
-    public void Add(User user)
-    {
-        dbContext.Users.Add(user);
+        return await GetFirstOrDefaultAsync(
+            new UserByEmailSpecification(email),
+            cancellationToken);
     }
 }
