@@ -1,4 +1,4 @@
-﻿using Application.Abstractions.Behaviors;
+using Application.Abstractions.Behaviors;
 using Application.Abstractions.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,7 +8,18 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.Scan(scan => scan.FromAssembliesOf(typeof(DependencyInjection))
+        services
+            .AddMessaging()
+            .AddLoggingBehaviors()
+            .AddValidationBehaviors();
+
+        return services;
+    }
+
+    private static IServiceCollection AddMessaging(this IServiceCollection services)
+    {
+        services.Scan(scan => scan
+            .FromAssembliesOf(typeof(DependencyInjection))
             .AddClasses(classes => classes.AssignableTo(typeof(IQueryHandler<,>)), publicOnly: false)
                 .AsImplementedInterfaces()
                 .WithScopedLifetime()
@@ -19,17 +30,23 @@ public static class DependencyInjection
                 .AsImplementedInterfaces()
                 .WithScopedLifetime());
 
+        return services;
+    }
+
+    private static IServiceCollection AddLoggingBehaviors(this IServiceCollection services)
+    {
         services.Decorate(typeof(IQueryHandler<,>), typeof(LoggingDecorator.QueryHandler<,>));
         services.Decorate(typeof(ICommandHandler<,>), typeof(LoggingDecorator.CommandHandler<,>));
         services.Decorate(typeof(ICommandHandler<>), typeof(LoggingDecorator.CommandBaseHandler<>));
 
-        services.Decorate(typeof(ICommandHandler<,>), typeof(ValidationDecorator.CommandHandler<,>));
-        services.Decorate(typeof(ICommandHandler<>), typeof(ValidationDecorator.CommandBaseHandler<>));
-
-
         return services;
     }
 
+    private static IServiceCollection AddValidationBehaviors(this IServiceCollection services)
+    {
+        services.Decorate(typeof(ICommandHandler<,>), typeof(ValidationDecorator.CommandHandler<,>));
+        services.Decorate(typeof(ICommandHandler<>), typeof(ValidationDecorator.CommandBaseHandler<>));
 
-
+        return services;
+    }
 }

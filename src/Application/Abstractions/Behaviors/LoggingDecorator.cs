@@ -1,4 +1,4 @@
-﻿using Application.Abstractions.Messaging;
+using Application.Abstractions.Messaging;
 using Microsoft.Extensions.Logging;
 using SharedKernel;
 
@@ -26,7 +26,7 @@ internal static class LoggingDecorator
             }
             else
             {
-                    logger.LogError("Completed command {Command} with error", commandName);
+                logger.LogError("Completed command {Command} with error", commandName);
             }
 
             return result;
@@ -53,7 +53,7 @@ internal static class LoggingDecorator
             }
             else
             {
-                    logger.LogError("Completed command {Command} with error", commandName);
+                logger.LogError("Completed command {Command} with error", commandName);
             }
 
             return result;
@@ -80,7 +80,7 @@ internal static class LoggingDecorator
             }
             else
             {
-                    logger.LogError("Completed query {Query} with error", queryName);
+                logger.LogError("Completed query {Query} with error", queryName);
             }
 
             return result;
