@@ -1,45 +1,79 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Application.Abstractions;
+using Application.Abstractions.Authentication;
 using Domain.Users;
+using Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Infrastructure.Authentication;
 
-internal sealed class JwtProvider : IJwtProvider
+internal sealed class JwtProvider(
+    IOptions<JwtOptions> options,
+    UserManager<ApplicationUser> userManager,
+    RoleManager<ApplicationRole> roleManager)
+    : IJwtProvider
 {
-    private readonly JwtOptions _jwtOptions;
+    private const string PermissionClaimType = "permissions";
+    private readonly JwtOptions _jwtOptions = options.Value;
 
-    public JwtProvider(IOptions<JwtOptions> options)
+    public async Task<string> GenerateTokenAsync(User user, CancellationToken cancellationToken = default)
     {
-        _jwtOptions = options.Value;
-    }
+        ApplicationUser? appUser = await userManager.FindByIdAsync(user.Id.ToString());
 
-
-    public string GenerateToken(User user)
-    {
-        var claims = new Claim[] { 
-         new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-         new(JwtRegisteredClaimNames.Email, user.Email),
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email),
+            new(JwtRegisteredClaimNames.Name, user.Name),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
 
+        if (appUser is not null)
+        {
+            IList<string> roles = await userManager.GetRolesAsync(appUser);
+
+            foreach (string role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            var permissionsAdded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (string roleName in roles)
+            {
+                ApplicationRole? roleEntity = await roleManager.FindByNameAsync(roleName);
+                if (roleEntity is null)
+                {
+                    continue;
+                }
+
+                IList<Claim> roleClaims = await roleManager.GetClaimsAsync(roleEntity);
+
+                foreach (Claim claim in roleClaims.Where(c => c.Type == PermissionClaimType))
+                {
+                    if (permissionsAdded.Add(claim.Value))
+                    {
+                        claims.Add(new Claim(PermissionClaimType, claim.Value));
+                    }
+                }
+            }
+        }
+
         var signingCredentials = new SigningCredentials(
-                                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.SecretKey)),
-                                    SecurityAlgorithms.HmacSha256);
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.SecretKey)),
+            SecurityAlgorithms.HmacSha256);
 
-        var token  = new JwtSecurityToken(
-                            issuer: _jwtOptions.Issuer,
-                            audience: _jwtOptions.Audience, 
-                            claims: claims,
-                            notBefore: null,
-                            expires: DateTime.UtcNow.AddMinutes(_jwtOptions.ExpirationInMinutes), 
-                            signingCredentials
-            );
+        var token = new JwtSecurityToken(
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
+            claims: claims,
+            notBefore: null,
+            expires: DateTime.UtcNow.AddMinutes(_jwtOptions.ExpirationInMinutes),
+            signingCredentials: signingCredentials);
 
-
-        string tokenValue = new JwtSecurityTokenHandler().WriteToken(token);
-        return tokenValue;
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

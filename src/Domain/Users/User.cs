@@ -4,22 +4,13 @@ namespace Domain.Users;
 
 public sealed class User : Entity
 {
-    public string Name { get; private set; }
-    public string Email { get; private set; }
-    public string Password { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public string Email { get; private set; } = string.Empty;
 
-    public User() { }
+    private User() { }
 
-    private User(Guid id, string name, string email, string password)
+    public static User Create(Guid id, string name, string email)
     {
-        Id = id;
-        Name = name;
-        Email = email;
-        Password = password;
-    }
-
-    public static User CreateNew(string name, string email, string passwordHash)
-    {
-        return new User(Guid.CreateVersion7(), name, email, passwordHash);
+        return new User { Id = id, Name = name, Email = email };
     }
 }

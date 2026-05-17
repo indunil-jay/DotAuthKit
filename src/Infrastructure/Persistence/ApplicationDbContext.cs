@@ -1,6 +1,9 @@
-﻿using Application.Databases;
-using Domain.Users;
+using Application.Databases;
+using Domain.Permissions;
 using Infrastructure.DomainEvents;
+using Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 
@@ -9,30 +12,25 @@ namespace Infrastructure.Persistence;
 public sealed class ApplicationDbContext(
     DbContextOptions<ApplicationDbContext> options,
     IDomainEventsDispatcher domainEventsDispatcher)
-    : DbContext(options), IApplicationDbContext
+    : IdentityDbContext<ApplicationUser, ApplicationRole, Guid,
+        IdentityUserClaim<Guid>, IdentityUserRole<Guid>, IdentityUserLogin<Guid>,
+        IdentityRoleClaim<Guid>, IdentityUserToken<Guid>>(options), IApplicationDbContext
 {
+    public DbSet<Permission> Permissions { get; set; }
 
-    public DbSet<User> Users { get; set; }
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder builder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+        base.OnModelCreating(builder);
 
-        modelBuilder.HasDefaultSchema(Schemas.Default);
+        builder.HasDefaultSchema(Schemas.Default);
+
+        builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        // When should you publish domain events?
-        //
-        // 1. BEFORE calling SaveChangesAsync
-        //     - domain events are part of the same transaction
-        //     - immediate consistency
-        // 2. AFTER calling SaveChangesAsync
-        //     - domain events are a separate transaction
-        //     - eventual consistency
-        //     - handlers can fail
-
         List<IDomainEvent> domainEvents = ExtractDomainEvents();
+
         int result = await base.SaveChangesAsync(cancellationToken);
 
         await PublishDomainEventsAsync(domainEvents);
@@ -47,18 +45,15 @@ public sealed class ApplicationDbContext(
 
     private List<IDomainEvent> ExtractDomainEvents()
     {
-        var domainEvents = ChangeTracker
+        return ChangeTracker
             .Entries<Entity>()
             .Select(entry => entry.Entity)
             .SelectMany(entity =>
             {
-                List<IDomainEvent> domainEvents = entity.DomainEvents;
-
+                List<IDomainEvent> events = entity.DomainEvents;
                 entity.ClearDomainEvents();
-
-                return domainEvents;
+                return events;
             })
             .ToList();
-        return domainEvents;
     }
 }

@@ -1,4 +1,4 @@
-using Application.Abstractions;
+using Application.Abstractions.Authentication;
 using Application.Abstractions.Messaging;
 using Domain.Users;
 using SharedKernel;
@@ -6,21 +6,23 @@ using SharedKernel;
 namespace Application.Features.Users.Commands.Login;
 
 internal sealed class LogginCommandHandler(
-    IUserRepository userRepository,
-    IJwtProvider jwtProvider
-    )
+    IIdentityService identityService,
+    IJwtProvider jwtProvider)
     : ICommandHandler<LogginCommand, string>
 {
     public async Task<Result<string>> Handle(LogginCommand command, CancellationToken cancellationToken)
     {
-        User? user = await userRepository.GetByEmailAsync(command.Email, cancellationToken);
+        Result<User> authResult = await identityService.AuthenticateAsync(
+            command.Email,
+            command.Password,
+            cancellationToken);
 
-        if (user is null || user.Password != command.Password)
+        if (authResult.IsFailure)
         {
-            return Result.Failure<string>(Error.Problem("Auth.InvalidCredentials", "Invalid email or password."));
+            return Result.Failure<string>(authResult.Error);
         }
 
-        string token = jwtProvider.GenerateToken(user);
+        string token = await jwtProvider.GenerateTokenAsync(authResult.Value, cancellationToken);
 
         return Result.Success(token);
     }

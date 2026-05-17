@@ -418,6 +418,12 @@ dotnet_diagnostic.S6605.severity = none
 # S6781: JWT secret keys should not be disclosed
 dotnet_diagnostic.S6781.severity = none
 
+# S2068: Hard-coded credentials are security-sensitive (seeding scenario)
+dotnet_diagnostic.S2068.severity = none
+
+# S3400: Methods should not return constants (seeding scenario)
+dotnet_diagnostic.S3400.severity = none
+
 # Auto-generated EF Core Migrations
 [**/Migrations/*.cs]
 dotnet_diagnostic.IDE0161.severity = none
