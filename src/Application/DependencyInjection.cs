@@ -1,6 +1,8 @@
 using Application.Abstractions.Behaviors;
 using Application.Abstractions.Messaging;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using SharedKernel;
 
 namespace Application;
 
@@ -11,7 +13,11 @@ public static class DependencyInjection
         services
             .AddMessaging()
             .AddLoggingBehaviors()
-            .AddValidationBehaviors();
+            .AddValidationBehaviors()
+            .AddDomainEventHandlers();
+
+
+
 
         return services;
     }
@@ -46,7 +52,16 @@ public static class DependencyInjection
     {
         services.Decorate(typeof(ICommandHandler<,>), typeof(ValidationDecorator.CommandHandler<,>));
         services.Decorate(typeof(ICommandHandler<>), typeof(ValidationDecorator.CommandBaseHandler<>));
+        
+        return services;
+    }
 
+    private static IServiceCollection AddDomainEventHandlers (this IServiceCollection services)
+    {
+        services.Scan(scan => scan.FromAssembliesOf(typeof(DependencyInjection))
+       .AddClasses(classes => classes.AssignableTo(typeof(IDomainEventHandler<>)), publicOnly: false)
+       .AsImplementedInterfaces()
+       .WithScopedLifetime());
         return services;
     }
 }
